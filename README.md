@@ -1,38 +1,106 @@
-import matplotlib.pyplot as plt
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تتبع المعاملات</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px gray;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background: blue;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 5px;
+        }
+        .timeline {
+            list-style: none;
+            padding: 0;
+        }
+        .timeline li {
+            background: #d1e7fd;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
 
-# إنشاء تصميم أولي بسيط للواجهة المقترحة
-fig, ax = plt.subplots(figsize=(6, 10))
-ax.set_xlim(0, 6)
-ax.set_ylim(0, 10)
-ax.axis("off")
+    <div class="container">
+        <h2>🔍 تتبع المعاملة</h2>
+        <input type="text" id="trackingNumber" placeholder="أدخل رقم المعاملة">
+        <button onclick="trackTransaction()">تتبع</button>
 
-# عناوين الواجهة
-ax.text(3, 9.5, "🔍 تتبع المعاملة", fontsize=16, fontweight="bold", ha="center")
+        <div id="statusContainer" class="status-box" style="display: none;">
+            <h3>حالة المعاملة: <span id="status"></span></h3>
+            <h4>المراحل:</h4>
+            <ul id="historyList" class="timeline"></ul>
+        </div>
+    </div>
 
-# شريط البحث
-ax.add_patch(plt.Rectangle((0.5, 8.5), 5, 0.5, edgecolor="black", facecolor="lightgray"))
-ax.text(3, 8.75, "أدخل رقم المعاملة...", fontsize=12, ha="center", color="gray")
+    <script>
+        function trackTransaction() {
+            let trackingNumber = document.getElementById("trackingNumber").value;
+            
+            if (trackingNumber === "") {
+                alert("يرجى إدخال رقم المعاملة");
+                return;
+            }
 
-# حالة الطلب
-ax.text(3, 7.8, "📍 حالة المعاملة: تحت المراجعة", fontsize=12, fontweight="bold", ha="center")
+            fetch("/track", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tracking_number: trackingNumber })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById("statusContainer").style.display = "block";
+                    document.getElementById("status").innerText = data.data.status;
+                    
+                    let historyList = document.getElementById("historyList");
+                    historyList.innerHTML = "";
+                    data.data.history.forEach(step => {
+                        let li = document.createElement("li");
+                        li.innerText = step;
+                        historyList.appendChild(li);
+                    });
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.log(error));
+        }
+    </script>
 
-# مراحل العملية
-stages = [
-    ("📂 تم الإرسال", 7),
-    ("📤 قيد التدقيق", 6),
-    ("✅ الموافقة الأولية", 5),
-    ("📌 تحت الإجراء", 4),
-    ("✔ مكتمل", 3)
-]
-
-# رسم الخط الزمني للمعاملة
-for i, (text, y) in enumerate(stages):
-    ax.add_patch(plt.Circle((3, y), 0.3, color="blue" if i < 2 else "gray"))
-    ax.text(3.5, y, text, fontsize=12, verticalalignment="center")
-
-# زر العودة
-ax.add_patch(plt.Rectangle((2, 0.5), 2, 0.8, edgecolor="black", facecolor="blue"))
-ax.text(3, 0.9, "🔙 رجوع", fontsize=12, color="white", ha="center")
-
-# عرض التصميم الأولي
-plt.show()
+</body>
+</html>
